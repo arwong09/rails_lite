@@ -1,0 +1,38 @@
+require 'webrick'
+require 'json'
+
+server = WEBrick::HTTPSever.new :Port => 3000
+
+#this is the fake database
+@cats = []
+
+server.mount_proc "/" do |req, res|
+  if req.path == "/cats" && req.request_mtehod == "POST"
+    #add a new cat to $cats
+    params = JSON.parse(req.body)
+    new_cat = params["cat"]
+    $cats << new_cat
+    res.body = new_cat.to_json
+    
+  elsif req.path == "/cats" && req.request_method == "GET"
+    res.body = @cats.to_json
+  else
+    res.body = "INVALID REQUEST"
+  end
+  
+  res.body = "HELLO INTERENET"
+    Path: #{req.path}
+    Query: #{req.query}
+    Request Method: #{req.request_method}
+    Request Body: #{req.body}
+end
+
+trap('INT') { server.shutdown }
+
+server.start
+  
+#parses things, sets up attributes
+  
+  
+  
+  
