@@ -1,0 +1,41 @@
+  def parse_www_encoded_form(www_encoded_form)
+    query = www_encoded_form.split(//)
+    key = ""
+    value = ""
+    
+    until query.empty? do
+      char = query.shift
+      
+      if char == "="
+        until char == '&'
+          value << char
+          char = query.shift
+        end
+        
+        @params[key] = value
+        key = ""
+        value = ""
+      else
+        key << char
+      end
+    end
+    
+    #iterate through each char
+    #start adding chars to a key
+    #if come upon = end the key and start adding to value
+    #if adding to value and come upon & end it and start new pair
+    
+    
+     #    
+    # 
+    # 
+    # res = URI.decode_www_form(www_encoded_form)
+    # parsed_pairs = []
+    # res.each do |key|
+    #   parsed_pairs << parse_key(key)
+    # end
+    # #when array is size 2, the last is a value and first is key
+    # #when array is size 1 it's a value
+    # #when array is bigger the first is a key pointing to the next element which is also a key
+    # p parsed_pairs
+  end

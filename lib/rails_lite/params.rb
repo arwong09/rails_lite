@@ -6,7 +6,7 @@ class Params
   # 2. post body
   # 3. route params
   def initialize(req, route_params = {})
-    @params = route_params
+    @params = {}
     q = req.query_string
     parse_www_encoded_form(q) unless q.nil?
   end
@@ -25,7 +25,6 @@ class Params
   end
 
   def to_s
-    @params.to_s
   end
 
   class AttributeNotFoundError < ArgumentError; end;
@@ -37,36 +36,30 @@ class Params
   # should return
   # { "user" => { "address" => { "street" => "main", "zip" => "89436" } } }
   def parse_www_encoded_form(www_encoded_form)
-    www_decoded_form = URI.decode_www_form(www_encoded_form)
-
-    www_decoded_form.each do |param_pair|
-      @params = paramify(param_pair)
+    q = URI.decode_www_form(www_encoded_form)
+    q = q.first
+    array = []
+    
+    q.each do |pair|
+      array << parse_key(pair) 
     end
+    first = array.shift
+    p "HERE"
+    p array
+    p first
+    @params[first] = create_nested_hashes(array)
   end
-      # TEST: paramify(["user[address][street]", "main"])
-  def paramify(arr)
-    keys_arr = parse_key(arr[0])
-    nested_val = arr[1]
-
-    level = @params
-
-    keys_arr.each do |val|
-      if level.has_key?(val)
-        level = level[val]
-        # next
-        # level[val] = "wtf"
-      elsif val == keys_arr.last
-        level[val] = nested_val
-      else
-        level[val] = {}
-        level = level[val]
-      end
-    end
-
-    level
+  
+  def create_nested_hashes(array)
+    return if array.nil?
+    create_nested_hashes(array.first) if array.count == 1 && array.first.is_a?(Array)
+    return array.first if array.count == 1 && array.first.is_a?(String)
+    Hash.new(array.shift => create_nested_hashes(array.first))
   end
-      # user[address][street] should return ['user', 'address', 'street']
+
+  # this should return an array
+  # user[address][street] should return ['user', 'address', 'street']
   def parse_key(key)
-    keys_arr = key.split(/\]\[|\[|\]/)
+    key.split(/\]\[|\[|\]/)
   end
 end
