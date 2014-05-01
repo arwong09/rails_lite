@@ -1,79 +1,57 @@
-# require "debugger"
+require 'URI'
 
-def create_nested_hashes(array)
-  return if array.nil?
-  create_nested_hashes(array.first) if array.count == 1 && array.first.is_a?(Array)
-  return array.first if array.count == 1 && array.first.is_a?(String)
-  
-  res = array.flatten if array.is_a?(Array)
-  return array if array.is_a?(String)
-  Hash.new(array.shift => create_nested_hashes(res))
+www_encoded_form = "user[address][street]=main"
+
+def parse_key(key)
+  key.split(/\]\[|\[|\]/)
 end
 
- array = [["val"]]
- first = ["key"]
- # debugger
-  @params[first] = create_nested_hashes(array)
+q = URI.decode_www_form(www_encoded_form)
+
+# => [["key", "val"]]
+#=> [["key", "val"], ["key2", "val2"]]
+# => [["user[address][street]", "main"]]
+
+
+def nest_hash(query, index, value)
+  return value if query[index].nil? 
+  { query[index] => nest_hash(query, index + 1, value) }
+end
+
+q.each do |query|
+  query.map! { |el| parse_key(el) }
+  
+  i = -1
+  until i.abs == query.count
+    current = query[i-1]
+    
+    if current.count > 1
+      @params = nest_hash(current, 0, query[i].first)
+      break
+    else
+      @params.merge!( { current.first => query[i].first } )
+      i -= 1
+    end
+  end
+end
+
+
+  
+p @params
 
 
 
-
-# # require 'debugger'
 # 
-#   def parse_www_encoded_form(www_encoded_form)
-#     params = {}
-#     query = www_encoded_form.split(//)
-#     key = []
-#     value = []
-#     
-#     until query.empty? do
-#       char = query.shift
-#       # debugger
-#       if char == "["
-#         until char == "]"
-#           char = query.shift
-#           value << char unless char == '&'
-#         end
-#       
-#         params[key.join("")] = value.join("")
-#         key = []
-#         value = []
-#       end
-#       
-#       if char == "="
-#         until char == '&' || char.nil?
-#           char = query.shift
-#           value << char unless char == '&'
-#         end
-#         
-#         params[key.join("")] = value.join("")
-#         key = []
-#         value = []
-#       else
-#         key << char
-#       end
-#     end
-#     
-#     #iterate through each char
-#     #start adding chars to a key
-#     #if come upon = end the key and start adding to value
-#     #if adding to value and come upon & end it and start new pair
-#     
-#     
-#      #    
-#     # 
-#     # 
-#     # res = URI.decode_www_form(www_encoded_form)
-#     # parsed_pairs = []
-#     # res.each do |key|
-#     #   parsed_pairs << parse_key(key)
-#     # end
-#     # #when array is size 2, the last is a value and first is key
-#     # #when array is size 1 it's a value
-#     # #when array is bigger the first is a key pointing to the next element which is also a key
-#     # p parsed_pairs
-#     p params
-#   end
-#   a = "user[address][street]=main"
-#   parse_www_encoded_form(a)
-#   
+# q.each do |pair|
+#   array << parse_key(pair) 
+# end
+# p array
+# # => [["key1"], ["val2"]]
+# #=> [["user", "address", "street"], ["main"]]
+# 
+# # first = array.shift
+# # p "HERE"
+# # p array
+# # p first
+# # @params[first] = create_nested_hashes(array)
+# 

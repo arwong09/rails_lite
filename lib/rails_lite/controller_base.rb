@@ -11,6 +11,7 @@ class ControllerBase
   def initialize(req, res, route_params = {})
     @req = req
     @res = res
+    @params = Params::new(req, route_params)
   end
 
   # populate the response with content
@@ -20,6 +21,7 @@ class ControllerBase
     res.body = content
     res.content_type = type
     
+    raise "error" if already_built_response?
     @already_built_response = res
     
     session.store_session(res)
@@ -35,6 +37,7 @@ class ControllerBase
     res.header["location"] = url
     res.status = 302
     
+    raise "error" if already_built_response?
     @already_built_response = res
     
     session.store_session(res)
@@ -55,5 +58,6 @@ class ControllerBase
 
   # use this with the router to call action_name (:index, :show, :create...)
   def invoke_action(name)
+    self.send(name)
   end
 end

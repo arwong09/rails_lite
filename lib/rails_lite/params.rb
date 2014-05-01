@@ -6,9 +6,12 @@ class Params
   # 2. post body
   # 3. route params
   def initialize(req, route_params = {})
-    @params = {}
+    @params = route_params
     q = req.query_string
+    b = req.body
+    
     parse_www_encoded_form(q) unless q.nil?
+    parse_www_encoded_form(b) unless b.nil?
   end
 
   def [](key)
@@ -16,12 +19,16 @@ class Params
   end
 
   def permit(*keys)
+    @permitted ||= []
+    @permitted.concat(keys)
   end
 
   def require(key)
+    raise Params::AttributeNotFoundError unless @params.keys.include?(key)
   end
 
   def permitted?(key)
+   @permitted.include?(key)
   end
 
   def to_s
@@ -30,35 +37,33 @@ class Params
   class AttributeNotFoundError < ArgumentError; end;
 
   private
-  # this should return deeply nested hash
-  # argument format
-  # user[address][street]=main&user[address][zip]=89436
-  # should return
-  # { "user" => { "address" => { "street" => "main", "zip" => "89436" } } }
+
   def parse_www_encoded_form(www_encoded_form)
     q = URI.decode_www_form(www_encoded_form)
-    q = q.first
-    array = []
+
+    q.each do |query|
+      query.map! { |el| parse_key(el) }
+  
+      i = -1
+      until i.abs == query.count
+        current = query[i-1]
     
-    q.each do |pair|
-      array << parse_key(pair) 
+        if current.count > 1
+          @params.merge!(nest_hash(current, 0, query[i].first))
+          break
+        else
+          @params.merge!( { current.first => query[i].first } )
+          i -= 1
+        end
+      end
     end
-    first = array.shift
-    p "HERE"
-    p array
-    p first
-    @params[first] = create_nested_hashes(array)
   end
   
-  def create_nested_hashes(array)
-    return if array.nil?
-    create_nested_hashes(array.first) if array.count == 1 && array.first.is_a?(Array)
-    return array.first if array.count == 1 && array.first.is_a?(String)
-    Hash.new(array.shift => create_nested_hashes(array.first))
+  def nest_hash(query, index, value)
+    return value if query[index].nil? 
+    { query[index] => nest_hash(query, index + 1, value) }
   end
 
-  # this should return an array
-  # user[address][street] should return ['user', 'address', 'street']
   def parse_key(key)
     key.split(/\]\[|\[|\]/)
   end
