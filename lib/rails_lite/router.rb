@@ -18,8 +18,8 @@ class Route
   # use pattern to pull out route params (save for later?)
   # instantiate controller and call controller action
   def run(req, res)
-    key = Regexp.new(/[a-z]+(?=\/)/).match(req.path)
-    value = Regexp.new(/\d+/).match(req.path)
+    match_data = (@path).match(req.path)
+    
     params = { key => value }
     self.controller_class.new(req, res, params)
     .invoke_action(self.action_name)
